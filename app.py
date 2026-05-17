@@ -18,9 +18,9 @@ FAQ_MATCH_THRESHOLD = 0.6
 COMPANY_NAME = "NovaCare 企業客服中心"
 
 AGENT_PROFILE = {
-    "name": "林宛儀",
+    "name": "李美雅",
     "title": "資深客服顧問",
-    "avatar": "林",
+    "avatar": "李",
 }
 
 SYSTEM_PROMPT = """
