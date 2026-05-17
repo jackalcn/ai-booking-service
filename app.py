@@ -835,8 +835,23 @@ def main() -> None:
 
         .block-container {
             max-width: 1180px;
-            padding-top: 1.4rem;
+            padding-top: 2.5rem;
             padding-bottom: 2rem;
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+            overflow: visible;
+        }
+
+        [data-testid="stMain"] {
+            overflow: visible;
+        }
+
+        [data-testid="stVerticalBlock"] {
+            overflow: visible;
+        }
+
+        [data-testid="column"] {
+            overflow: visible;
         }
 
         .header-panel {
