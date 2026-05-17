@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from datetime import datetime
 from difflib import SequenceMatcher
@@ -32,6 +33,24 @@ SYSTEM_PROMPT = """
 如果資料不足，請說明目前資料不足，建議聯繫人工客服確認。
 不可以亂編公司政策、價格、保固期限或承諾。
 """.strip()
+
+LOGGER = logging.getLogger(__name__)
+
+GEMINI_MODEL_FALLBACKS = ["gemini-2.0-flash", "gemini-1.5-flash-latest"]
+
+AI_ERROR_HINTS = {
+    "missing_api_key": "尚未設定可用的 API Key，請先在 Secrets 或 .env 補上金鑰。",
+    "openai_api_error": "OpenAI 呼叫失敗，請檢查金鑰、模型名稱與額度是否正常。",
+    "gemini_invalid_api_key": "Google API Key 無效或已失效，請到 Google AI Studio 重新產生後更新 Secrets。",
+    "gemini_permission_denied": "目前的 Google API Key 權限不足，請確認是否開啟 Generative Language API 並允許伺服器端呼叫。",
+    "gemini_quota_exceeded": "Google Gemini 配額已達上限，請檢查配額與計費設定後再試。",
+    "gemini_model_not_found": "目前設定的 GEMINI_MODEL 不可用，建議改為 gemini-2.0-flash。",
+    "gemini_bad_request": "Gemini 請求格式或模型設定不被接受，請檢查 GEMINI_MODEL 與 API 設定。",
+    "gemini_safety_block": "本次提問被安全政策攔截，請改寫提問內容後再試。",
+    "gemini_server_error": "Google Gemini 服務暫時異常，請稍後重試。",
+    "gemini_api_error": "Google Gemini 呼叫失敗，請確認網路、API 設定與服務狀態。",
+    "empty_response": "AI 回傳內容為空，請稍後重試或改寫問題。",
+}
 
 
 def get_runtime_setting(key: str, default_value: str = "") -> str:
@@ -116,6 +135,63 @@ def build_ai_user_prompt(user_question: str, category: str) -> str:
         "請以專業親切型企業客服口吻回答，"
         "若資料不足請明確表示並建議聯繫人工客服。"
     )
+
+
+def map_gemini_http_error(response: requests.Response) -> str:
+    """將 Gemini HTTP 錯誤映射為可判讀的錯誤碼。"""
+    status_code = response.status_code
+    status_text = ""
+    message_text = ""
+
+    try:
+        payload = response.json()
+        error_obj = payload.get("error", {}) if isinstance(payload, dict) else {}
+        status_text = str(error_obj.get("status", "")).upper()
+        message_text = str(error_obj.get("message", ""))
+    except Exception:
+        message_text = response.text or ""
+
+    message_lower = message_text.lower()
+
+    if "api key" in message_lower and ("invalid" in message_lower or "not valid" in message_lower):
+        return "gemini_invalid_api_key"
+
+    if status_code == 404 or "not found for api version" in message_lower:
+        return "gemini_model_not_found"
+
+    if "model" in message_lower and "not found" in message_lower:
+        return "gemini_model_not_found"
+
+    if status_code == 429 or "quota" in message_lower or "rate limit" in message_lower:
+        return "gemini_quota_exceeded"
+
+    if status_code == 403 or status_text == "PERMISSION_DENIED":
+        if "quota" in message_lower:
+            return "gemini_quota_exceeded"
+        return "gemini_permission_denied"
+
+    if status_code == 400:
+        return "gemini_bad_request"
+
+    if status_code >= 500:
+        return "gemini_server_error"
+
+    return "gemini_api_error"
+
+
+def build_ai_error_hint(error_code: Optional[str], model_name: str) -> str:
+    """將錯誤碼轉為使用者可採取行動的提示。"""
+    if not error_code:
+        return ""
+
+    base_hint = AI_ERROR_HINTS.get(error_code, "")
+    if not base_hint:
+        return ""
+
+    if error_code == "gemini_model_not_found":
+        return f"{base_hint}（目前設定：{model_name}）"
+
+    return base_hint
 
 CATEGORY_KEYWORDS = {
     "產品介紹": ["產品", "方案", "規格", "功能", "比較", "介紹"],
@@ -333,7 +409,6 @@ def generate_gemini_response(
     if not api_key:
         return None, "missing_api_key"
 
-    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
     payload = {
         "systemInstruction": {
             "parts": [{"text": SYSTEM_PROMPT}],
@@ -349,38 +424,86 @@ def generate_gemini_response(
         },
     }
 
+    candidate_models = [model_name]
+    for fallback_model in GEMINI_MODEL_FALLBACKS:
+        if fallback_model != model_name:
+            candidate_models.append(fallback_model)
+
+    api_versions = ["v1", "v1beta"]
+    last_error_code = "gemini_api_error"
+
     try:
-        response = requests.post(
-            endpoint,
-            params={"key": api_key},
-            json=payload,
-            timeout=45,
-        )
+        for candidate_model in candidate_models:
+            for api_version in api_versions:
+                endpoint = (
+                    f"https://generativelanguage.googleapis.com/{api_version}/"
+                    f"models/{candidate_model}:generateContent"
+                )
 
-        if response.status_code >= 400:
-            return None, "gemini_api_error"
+                response = requests.post(
+                    endpoint,
+                    params={"key": api_key},
+                    json=payload,
+                    timeout=45,
+                )
 
-        data = response.json()
-        candidates = data.get("candidates", [])
-        if not candidates:
-            return None, "empty_response"
+                if response.status_code >= 400:
+                    last_error_code = map_gemini_http_error(response)
+                    LOGGER.warning(
+                        "Gemini API failed: status=%s code=%s version=%s model=%s",
+                        response.status_code,
+                        last_error_code,
+                        api_version,
+                        candidate_model,
+                    )
 
-        parts = candidates[0].get("content", {}).get("parts", [])
-        text_parts = [
-            str(part.get("text", "")).strip()
-            for part in parts
-            if str(part.get("text", "")).strip()
-        ]
+                    # 模型不存在時，嘗試下一個 API 版本或備援模型。
+                    if last_error_code == "gemini_model_not_found":
+                        continue
 
-        answer = "\n".join(text_parts).strip()
-        if not answer:
-            return None, "empty_response"
+                    return None, last_error_code
 
-        return answer, None
+                data = response.json()
+                candidates = data.get("candidates", []) if isinstance(data, dict) else []
+                if not candidates:
+                    block_reason = (
+                        data.get("promptFeedback", {}).get("blockReason")
+                        if isinstance(data, dict)
+                        else None
+                    )
+                    if block_reason:
+                        LOGGER.warning(
+                            "Gemini blocked by safety policy: version=%s model=%s reason=%s",
+                            api_version,
+                            candidate_model,
+                            block_reason,
+                        )
+                        return None, "gemini_safety_block"
+
+                    last_error_code = "empty_response"
+                    continue
+
+                parts = candidates[0].get("content", {}).get("parts", [])
+                text_parts = [
+                    str(part.get("text", "")).strip()
+                    for part in parts
+                    if str(part.get("text", "")).strip()
+                ]
+
+                answer = "\n".join(text_parts).strip()
+                if not answer:
+                    last_error_code = "empty_response"
+                    continue
+
+                return answer, None
+
+        return None, last_error_code
 
     except requests.RequestException:
+        LOGGER.exception("Gemini request exception")
         return None, "gemini_api_error"
     except Exception:
+        LOGGER.exception("Unexpected Gemini error")
         return None, "gemini_api_error"
 
 
@@ -651,6 +774,10 @@ def build_answer(
         "建議您稍後再試，或改由人工客服協助處理。\n"
         "還有其他需要我協助的地方嗎？"
     )
+
+    error_hint = build_ai_error_hint(error_code, ai_model)
+    if error_hint:
+        fail_text = f"{fail_text}\n\n系統診斷建議：{error_hint}"
 
     return {
         "role": "assistant",
