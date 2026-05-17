@@ -647,6 +647,9 @@ def init_session_state() -> None:
     if "auto_scroll_to_latest" not in st.session_state:
         st.session_state.auto_scroll_to_latest = False
 
+    if "scroll_to_top_on_load" not in st.session_state:
+        st.session_state.scroll_to_top_on_load = True
+
 
 def build_sidebar() -> None:
     """建立側邊欄客服資訊與系統說明。"""
@@ -710,6 +713,8 @@ def build_sidebar() -> None:
             st.session_state.messages = []
             st.session_state.case_id = generate_case_id()
             st.session_state.chat_started_at = current_timestamp()
+            st.session_state.auto_scroll_to_latest = False
+            st.session_state.scroll_to_top_on_load = True
             st.rerun()
 
 
@@ -780,6 +785,38 @@ def scroll_to_latest_message() -> None:
             scroller.scrollTo({ top: scroller.scrollHeight, behavior: 'auto' });
             const distance = scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop;
             return distance <= 12;
+        };
+
+        const timer = setInterval(() => {
+            attempts += 1;
+            const done = runScroll();
+            if (done || attempts >= maxAttempts) {
+                clearInterval(timer);
+            }
+        }, 120);
+        </script>
+        """,
+        height=0,
+    )
+
+
+def scroll_to_page_top() -> None:
+    """在初次載入時將頁面定位到最上方。"""
+    components.html(
+        """
+        <script>
+        let attempts = 0;
+        const maxAttempts = 20;
+
+        const runScroll = () => {
+            const rootDoc = window.parent?.document;
+            if (!rootDoc) return false;
+
+            const scroller = rootDoc.querySelector('[data-testid="stAppScrollToBottomContainer"]');
+            if (!scroller) return false;
+
+            scroller.scrollTo({ top: 0, behavior: 'auto' });
+            return scroller.scrollTop <= 1;
         };
 
         const timer = setInterval(() => {
@@ -1344,6 +1381,9 @@ def main() -> None:
     if st.session_state.get("auto_scroll_to_latest"):
         scroll_to_latest_message()
         st.session_state.auto_scroll_to_latest = False
+    elif st.session_state.get("scroll_to_top_on_load"):
+        scroll_to_page_top()
+        st.session_state.scroll_to_top_on_load = False
 
     user_input = st.chat_input("請輸入您想詢問的內容，例如：如何申請退貨？")
     final_question = selected_quick_question if selected_quick_question else user_input
@@ -1394,6 +1434,7 @@ def main() -> None:
         assistant_message["agent_name"] = AGENT_PROFILE["name"]
         assistant_message["agent_title"] = AGENT_PROFILE["title"]
         st.session_state.messages.append(assistant_message)
+        st.session_state.scroll_to_top_on_load = False
         st.session_state.auto_scroll_to_latest = True
 
         # 重新整理畫面，讓新訊息立即顯示。
