@@ -2117,9 +2117,9 @@ def main() -> None:
         }
 
         header[data-testid="stHeader"] {
-            display: none !important;
-            visibility: hidden !important;
-            height: 0 !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
         }
 
         [data-testid="stToolbarActions"],
