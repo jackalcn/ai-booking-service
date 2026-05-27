@@ -29,6 +29,7 @@ APP_NAME = "AI 智慧訂房及客服系統"
 APP_SUBTITLE = "家登精密內部差旅宿舍訂房與客服平台"
 INTERNAL_USE_NOTICE = "僅限家登精密員工及授權同仁使用"
 SYSTEM_OWNER = "吳佩綺"
+BRAND_LOGO_URL = "https://www.gudeng.com/img/logo.svg"
 OPENAI_TIMEOUT_SECONDS = 20
 AI_CONNECT_TIMEOUT_SECONDS = 6
 AI_READ_TIMEOUT_SECONDS = 12
@@ -1272,7 +1273,9 @@ def build_sidebar(notification_cfg: Dict[str, str], sso_enabled: bool) -> Tuple[
         st.markdown(
             f"""
             <div class="side-brand">
-                <div class="side-logo">GD<span class="side-dot"></span></div>
+                <div class="side-logo-wrap">
+                    <img src="{BRAND_LOGO_URL}" class="side-logo-img" alt="家登精密 Logo" />
+                </div>
                 <div>
                     <div class="side-brand-title">{APP_NAME}</div>
                     <div class="side-brand-sub">{INTERNAL_USE_NOTICE}</div>
@@ -2078,11 +2081,23 @@ def main() -> None:
 
         .stApp {
             background:
-                radial-gradient(ellipse 38% 22% at 55% -7%, rgba(183, 191, 199, 0.28), transparent 72%),
-                radial-gradient(ellipse 22% 16% at 82% 22%, rgba(210, 152, 200, 0.42), transparent 72%),
-                radial-gradient(ellipse 56% 30% at 75% 52%, rgba(194, 221, 240, 0.56), transparent 72%),
-                radial-gradient(ellipse 68% 62% at 5% 86%, rgba(46, 181, 226, 0.28), transparent 64%),
-                linear-gradient(180deg, #f2f4f7 0%, #f8fafc 42%, #ffffff 100%);
+                linear-gradient(180deg, rgba(245, 248, 252, 0.9) 0%, rgba(248, 251, 253, 0.92) 48%, rgba(255, 255, 255, 0.95) 100%),
+                url("https://www.gudeng.com/UploadImage/PageEdit/637546791602481737.jpg");
+            background-size: cover;
+            background-position: center top;
+            background-repeat: no-repeat;
+        }
+
+        header[data-testid="stHeader"],
+        div[data-testid="stHeader"],
+        [data-testid="stToolbar"],
+        [data-testid="stHeaderActionElements"],
+        [data-testid="stStatusWidget"],
+        [data-testid="stAppDeployButton"],
+        [data-testid="stMainMenu"],
+        button[kind="header"] {
+            display: none !important;
+            visibility: hidden !important;
         }
 
         .block-container {
@@ -2285,7 +2300,7 @@ def main() -> None:
         .side-brand {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             background: rgba(255, 255, 255, 0.9);
             border: 1px solid #c4d8e8;
             border-radius: 12px;
@@ -2293,30 +2308,15 @@ def main() -> None:
             margin-bottom: 10px;
         }
 
-        .side-logo {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            background: linear-gradient(140deg, #18b2d4 0%, #0d5ca8 100%);
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 0.95rem;
-            font-weight: 700;
-            letter-spacing: 0.8px;
-            position: relative;
+        .side-logo-wrap {
+            flex: 0 0 auto;
         }
 
-        .side-logo .side-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--gd-magenta);
-            position: absolute;
-            right: 5px;
-            top: 6px;
+        .side-logo-img {
+            width: 122px;
+            max-width: 100%;
+            height: auto;
+            display: block;
         }
 
         .side-brand-title {
