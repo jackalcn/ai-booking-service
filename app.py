@@ -2116,11 +2116,27 @@ def main() -> None:
             background-repeat: no-repeat;
         }
 
-        header[data-testid="stHeader"],
-        [data-testid="stToolbar"] {
+        header[data-testid="stHeader"] {
             display: none !important;
             visibility: hidden !important;
             height: 0 !important;
+        }
+
+        [data-testid="stToolbarActions"],
+        [data-testid="stStatusWidget"],
+        [data-testid="stAppDeployButton"],
+        [data-testid="stMainMenu"],
+        [data-testid="stMainMenuButton"] {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        [data-testid="stExpandSidebarButton"],
+        [data-testid="stSidebarCollapseButton"],
+        [data-testid="stSidebarCollapseButton"] button {
+            display: inline-flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
         }
 
         .block-container {
