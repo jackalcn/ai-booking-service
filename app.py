@@ -2059,7 +2059,7 @@ def main() -> None:
     notification_cfg = resolve_notification_config()
     sso_enabled = parse_bool(get_runtime_setting("ENABLE_SSO", "false"))
 
-    st.set_page_config(page_title=APP_NAME, page_icon="🏢", layout="wide")
+    st.set_page_config(page_title=APP_NAME, page_icon="🏢", layout="wide", initial_sidebar_state="expanded")
 
     st.markdown(
         """
@@ -2088,16 +2088,20 @@ def main() -> None:
             background-repeat: no-repeat;
         }
 
-        header[data-testid="stHeader"],
-        div[data-testid="stHeader"],
-        [data-testid="stToolbar"],
-        [data-testid="stHeaderActionElements"],
+        [data-testid="stToolbarActions"],
         [data-testid="stStatusWidget"],
         [data-testid="stAppDeployButton"],
-        [data-testid="stMainMenu"],
-        button[kind="header"] {
+        [data-testid="stMainMenu"] {
             display: none !important;
             visibility: hidden !important;
+        }
+
+        [data-testid="stExpandSidebarButton"],
+        [data-testid="stSidebarCollapseButton"],
+        [data-testid="stSidebarCollapseButton"] button {
+            display: inline-flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
         }
 
         .block-container {
