@@ -37,8 +37,8 @@ BOOKING_STATUS_OPTIONS = ["待審核", "已核准", "已拒絕", "已取消", "�
 BOOKING_ID_PATTERN = re.compile(r"BK-\d{8}-\d{4}")
 
 AGENT_PROFILE = {
-    "name": "林芷涵",
-    "title": "行政總務智慧助理",
+    "name": "吳佩綺",
+    "title": "行政智慧總務",
     "avatar": "GD",
 }
 
@@ -2064,11 +2064,13 @@ def main() -> None:
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Rajdhani:wght@600;700&display=swap');
 
         :root {
-            --gd-blue: #0c5ca8;
-            --gd-cyan: #22b8d8;
-            --gd-magenta: #c32694;
-            --gd-text: #163a59;
-            --gd-border: #c6deef;
+            --gd-blue: #0b79bf;
+            --gd-cyan: #31b2de;
+            --gd-magenta: #c5178c;
+            --gd-text: #1f3349;
+            --gd-border: #c7d7e6;
+            --gd-soft-gray: #eef1f4;
+            --gd-ice-blue: #dbeaf5;
         }
 
         html, body, [class*="css"] {
@@ -2077,11 +2079,50 @@ def main() -> None:
         }
 
         .stApp {
+            position: relative;
+            overflow-x: hidden;
             background:
-                radial-gradient(circle at 15% 16%, rgba(34, 184, 216, 0.16), transparent 30%),
-                radial-gradient(circle at 88% 8%, rgba(195, 38, 148, 0.12), transparent 26%),
-                radial-gradient(circle at 78% 34%, rgba(12, 92, 168, 0.08), transparent 28%),
-                linear-gradient(180deg, #f5fbff 0%, #ffffff 44%);
+                radial-gradient(ellipse 38% 22% at 55% -7%, rgba(183, 191, 199, 0.28), transparent 72%),
+                radial-gradient(ellipse 22% 16% at 82% 22%, rgba(210, 152, 200, 0.42), transparent 72%),
+                radial-gradient(ellipse 56% 30% at 75% 52%, rgba(194, 221, 240, 0.56), transparent 72%),
+                radial-gradient(ellipse 68% 62% at 5% 86%, rgba(46, 181, 226, 0.28), transparent 64%),
+                linear-gradient(180deg, #f2f4f7 0%, #f8fafc 42%, #ffffff 100%);
+        }
+
+        .stApp::before {
+            content: '';
+            position: fixed;
+            left: -240px;
+            top: 112px;
+            width: 780px;
+            height: 980px;
+            border-radius: 58% 42% 52% 48% / 54% 46% 54% 46%;
+            background:
+                radial-gradient(ellipse 80% 82% at 68% 35%, rgba(53, 183, 226, 0.26) 0 38%, transparent 39%),
+                radial-gradient(ellipse 80% 86% at 57% 53%, rgba(12, 121, 191, 0.78) 0 38%, transparent 39%);
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.6;
+        }
+
+        .stApp::after {
+            content: '';
+            position: fixed;
+            right: 4%;
+            top: 162px;
+            width: 320px;
+            height: 190px;
+            border-radius: 61% 39% 58% 42% / 53% 47% 57% 43%;
+            background: rgba(213, 171, 207, 0.45);
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(1px);
+        }
+
+        section[data-testid="stSidebar"],
+        .block-container {
+            position: relative;
+            z-index: 2;
         }
 
         header[data-testid="stHeader"],
@@ -2099,16 +2140,17 @@ def main() -> None:
             padding-bottom: 2.2rem;
             padding-left: 1.2rem;
             padding-right: 1.2rem;
+            backdrop-filter: saturate(112%);
         }
 
         .header-panel {
-            background: #ffffff;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.97) 0%, rgba(248, 251, 255, 0.98) 100%);
             border: 1px solid var(--gd-border);
-            border-top: 4px solid var(--gd-cyan);
-            border-left: 6px solid var(--gd-blue);
+            border-top: 5px solid var(--gd-cyan);
+            border-left: 7px solid var(--gd-blue);
             border-radius: 14px;
             padding: 18px 20px;
-            box-shadow: 0 10px 20px rgba(9, 72, 132, 0.09);
+            box-shadow: 0 14px 26px rgba(24, 55, 95, 0.12);
         }
 
         .brand-row {
@@ -2149,12 +2191,12 @@ def main() -> None:
             margin: 0;
             font-size: 1.5rem;
             font-weight: 700;
-            color: #0f4379;
+            color: #1e3e63;
         }
 
         .brand-subtitle {
             margin: 2px 0 0 0;
-            color: #4a6684;
+            color: #566d84;
             font-size: 0.95rem;
         }
 
@@ -2170,16 +2212,16 @@ def main() -> None:
             padding: 5px 11px;
             font-size: 0.84rem;
             font-weight: 600;
-            border: 1px solid #bed9ec;
-            background: #eef8ff;
-            color: #265785;
+            border: 1px solid #b7cbde;
+            background: #eff5fb;
+            color: #2d5278;
         }
 
         .agent-panel {
-            background: #ffffff;
-            border: 1px solid var(--gd-border);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(245, 250, 255, 0.96) 100%);
+            border: 1px solid #c4d6e6;
             border-radius: 14px;
-            box-shadow: 0 10px 18px rgba(10, 76, 140, 0.08);
+            box-shadow: 0 10px 20px rgba(28, 62, 102, 0.1);
             padding: 14px;
             min-height: 130px;
         }
@@ -2243,11 +2285,11 @@ def main() -> None:
         }
 
         .info-tile {
-            background: #ffffff;
-            border: 1px solid var(--gd-border);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.97) 0%, rgba(248, 252, 255, 0.97) 100%);
+            border: 1px solid #c8d9e9;
             border-radius: 12px;
             padding: 12px 14px;
-            box-shadow: 0 4px 12px rgba(15, 67, 120, 0.07);
+            box-shadow: 0 6px 14px rgba(24, 64, 108, 0.08);
             min-height: 90px;
         }
 
@@ -2286,16 +2328,16 @@ def main() -> None:
         }
 
         section[data-testid="stSidebar"] {
-            background: linear-gradient(180deg, #f7fcff 0%, #ebf7ff 100%);
-            border-right: 1px solid #d4e5f3;
+            background: linear-gradient(180deg, #f0f3f7 0%, #eaf2f8 34%, #edf7fd 100%);
+            border-right: 1px solid #cad8e5;
         }
 
         .side-brand {
             display: flex;
             align-items: center;
             gap: 10px;
-            background: #ffffff;
-            border: 1px solid #d1e4f2;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #c4d8e8;
             border-radius: 12px;
             padding: 10px 12px;
             margin-bottom: 10px;
@@ -2343,8 +2385,8 @@ def main() -> None:
             display: flex;
             gap: 10px;
             align-items: center;
-            background: #ffffff;
-            border: 1px solid #d1e4f2;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #c4d8e8;
             border-radius: 12px;
             padding: 10px 12px;
             margin-bottom: 12px;
@@ -2378,31 +2420,31 @@ def main() -> None:
         }
 
         [data-testid="stChatMessage"] {
-            border: 1px solid #d9e8f4;
+            border: 1px solid #cfdfed;
             border-radius: 12px;
             padding: 8px 12px;
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.95);
         }
 
         [data-testid="stButton"] > button,
         [data-testid="stDownloadButton"] > button {
             border-radius: 10px;
-            border: 1px solid #8abbe2;
-            background: linear-gradient(135deg, #ffffff 0%, #ecf8ff 100%);
-            color: #125084;
+            border: 1px solid #7cafdc;
+            background: linear-gradient(135deg, #ffffff 0%, #eaf4fd 100%);
+            color: #184b78;
             font-weight: 600;
         }
 
         [data-testid="stButton"] > button:hover,
         [data-testid="stDownloadButton"] > button:hover {
-            border-color: #2caed1;
-            color: #0d3f73;
-            box-shadow: 0 4px 12px rgba(22, 124, 186, 0.18);
+            border-color: #1d97cb;
+            color: #123e67;
+            box-shadow: 0 5px 14px rgba(24, 116, 178, 0.22);
         }
 
         [data-testid="stForm"] {
-            background: linear-gradient(180deg, #ffffff 0%, #f8fcff 100%);
-            border: 1px solid #d8e8f4;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.97) 0%, rgba(248, 252, 255, 0.97) 100%);
+            border: 1px solid #cfddeb;
             border-radius: 12px;
             padding: 10px;
         }
@@ -2477,7 +2519,7 @@ def main() -> None:
             unsafe_allow_html=True,
         )
 
-    st.caption("設計風格參照家登精密官網視覺語言：藍綠主色、白底清晰資訊層次、洋紅點綴識別。")
+    st.caption("已套用家登精密官網風格主題：藍白灰底、流線背景與洋紅識別點綴。")
     if sso_enabled:
         st.caption("SSO 已啟用：系統會優先讀取 Query/Header/Secrets 的員工 Claim 並自動帶入訂房欄位。")
 
