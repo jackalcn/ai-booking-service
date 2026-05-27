@@ -2069,8 +2069,6 @@ def main() -> None:
             --gd-magenta: #c5178c;
             --gd-text: #1f3349;
             --gd-border: #c7d7e6;
-            --gd-soft-gray: #eef1f4;
-            --gd-ice-blue: #dbeaf5;
         }
 
         html, body, [class*="css"] {
@@ -2079,8 +2077,6 @@ def main() -> None:
         }
 
         .stApp {
-            position: relative;
-            overflow-x: hidden;
             background:
                 radial-gradient(ellipse 38% 22% at 55% -7%, rgba(183, 191, 199, 0.28), transparent 72%),
                 radial-gradient(ellipse 22% 16% at 82% 22%, rgba(210, 152, 200, 0.42), transparent 72%),
@@ -2089,58 +2085,12 @@ def main() -> None:
                 linear-gradient(180deg, #f2f4f7 0%, #f8fafc 42%, #ffffff 100%);
         }
 
-        .stApp::before {
-            content: '';
-            position: fixed;
-            left: -240px;
-            top: 112px;
-            width: 780px;
-            height: 980px;
-            border-radius: 58% 42% 52% 48% / 54% 46% 54% 46%;
-            background:
-                radial-gradient(ellipse 80% 82% at 68% 35%, rgba(53, 183, 226, 0.26) 0 38%, transparent 39%),
-                radial-gradient(ellipse 80% 86% at 57% 53%, rgba(12, 121, 191, 0.78) 0 38%, transparent 39%);
-            pointer-events: none;
-            z-index: 0;
-            opacity: 0.6;
-        }
-
-        .stApp::after {
-            content: '';
-            position: fixed;
-            right: 4%;
-            top: 162px;
-            width: 320px;
-            height: 190px;
-            border-radius: 61% 39% 58% 42% / 53% 47% 57% 43%;
-            background: rgba(213, 171, 207, 0.45);
-            pointer-events: none;
-            z-index: 0;
-            filter: blur(1px);
-        }
-
-        section[data-testid="stSidebar"],
-        .block-container {
-            position: relative;
-            z-index: 2;
-        }
-
-        header[data-testid="stHeader"],
-        [data-testid="stToolbar"],
-        [data-testid="stDecoration"],
-        button[kind="header"] {
-            display: none !important;
-            visibility: hidden !important;
-            height: 0 !important;
-        }
-
         .block-container {
             max-width: 1180px;
             padding-top: 1rem;
             padding-bottom: 2.2rem;
             padding-left: 1.2rem;
             padding-right: 1.2rem;
-            backdrop-filter: saturate(112%);
         }
 
         .header-panel {
