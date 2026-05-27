@@ -1194,12 +1194,6 @@ def init_session_state() -> None:
     if "chat_started_at" not in st.session_state:
         st.session_state.chat_started_at = current_timestamp()
 
-    if "auto_scroll_to_latest" not in st.session_state:
-        st.session_state.auto_scroll_to_latest = False
-
-    if "scroll_to_top_on_load" not in st.session_state:
-        st.session_state.scroll_to_top_on_load = True
-
     if "manual_profile" not in st.session_state:
         st.session_state.manual_profile = {}
 
@@ -1426,8 +1420,6 @@ def build_sidebar(
             st.session_state.messages = []
             st.session_state.case_id = generate_case_id("CS")
             st.session_state.chat_started_at = current_timestamp()
-            st.session_state.auto_scroll_to_latest = False
-            st.session_state.scroll_to_top_on_load = True
             st.rerun()
 
     return profile, admin
@@ -1486,32 +1478,37 @@ def render_service_overview(ai_enabled: bool, mode_text: str, faq_count: int) ->
         )
 
 
-def scroll_to_latest_message() -> None:
+def prevent_scroll_restore_on_reload() -> None:
     components.html(
         """
         <script>
-        let attempts = 0;
-        const maxAttempts = 24;
+        (() => {
+            const root = window.parent;
+            if (!root || root.__gdScrollFixApplied) return;
+            root.__gdScrollFixApplied = true;
 
-        const runScroll = () => {
-            const rootDoc = window.parent?.document;
-            if (!rootDoc) return false;
-
-            const scroller = rootDoc.querySelector('[data-testid="stAppScrollToBottomContainer"]');
-            if (!scroller) return false;
-
-            scroller.scrollTo({ top: scroller.scrollHeight, behavior: 'auto' });
-            const distance = scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop;
-            return distance <= 12;
-        };
-
-        const timer = setInterval(() => {
-            attempts += 1;
-            const done = runScroll();
-            if (done || attempts >= maxAttempts) {
-                clearInterval(timer);
+            try {
+                if (root.history && "scrollRestoration" in root.history) {
+                    root.history.scrollRestoration = "manual";
+                }
+            } catch (_) {
+                // Ignore cross-context or browser-specific failures.
             }
-        }, 120);
+
+            let attempts = 0;
+            const maxAttempts = 35;
+            const timer = setInterval(() => {
+                attempts += 1;
+                const scroller = root.document?.querySelector('[data-testid="stAppScrollToBottomContainer"]');
+                if (scroller) {
+                    scroller.scrollTo({ top: 0, behavior: "auto" });
+                }
+
+                if (attempts >= maxAttempts) {
+                    clearInterval(timer);
+                }
+            }, 120);
+        })();
         </script>
         """,
         height=0,
@@ -1804,8 +1801,6 @@ def render_booking_workspace(
                     }
                 )
 
-                st.session_state.auto_scroll_to_latest = True
-                st.session_state.scroll_to_top_on_load = False
                 st.success(f"訂房申請已送出：{booking_record.get('booking_id')}（通知：{notify_result}）")
                 st.rerun()
 
@@ -2158,31 +2153,31 @@ def main() -> None:
         }
 
         .brand-logo {
-            width: 58px;
+            width: 126px;
             height: 58px;
-            border-radius: 14px;
-            background: linear-gradient(135deg, #18b2d4 0%, #0c5ca8 78%);
-            color: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #c8d8e7;
+            background: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 6px 10px;
+            overflow: hidden;
+            box-shadow: 0 6px 12px rgba(23, 67, 112, 0.14);
+        }
+
+        .brand-logo-img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .brand-logo-fallback {
             font-family: 'Rajdhani', sans-serif;
             font-size: 1.25rem;
             font-weight: 700;
             letter-spacing: 1px;
-            position: relative;
-            box-shadow: 0 8px 16px rgba(9, 75, 138, 0.28);
-        }
-
-        .brand-logo::after {
-            content: '';
-            width: 9px;
-            height: 9px;
-            border-radius: 50%;
-            background: var(--gd-magenta);
-            position: absolute;
-            top: 9px;
-            right: 8px;
+            color: #0d5ca8;
         }
 
         .brand-name {
@@ -2459,15 +2454,15 @@ def main() -> None:
             }
 
             .brand-logo {
-                width: 50px;
-                height: 50px;
-                font-size: 1.1rem;
+                width: 108px;
+                height: 48px;
             }
         }
         </style>
     """
 
     st.markdown(css_styles.replace("__BACKGROUND_LAYER__", background_layer), unsafe_allow_html=True)
+    prevent_scroll_restore_on_reload()
 
     init_session_state()
     init_database()
@@ -2478,12 +2473,18 @@ def main() -> None:
     header_col1, header_col2 = st.columns([2.2, 1], gap="medium")
 
     with header_col1:
+        header_logo_html = (
+            f'<img src="{brand_logo_src}" class="brand-logo-img" alt="家登精密 Logo" />'
+            if brand_logo_src
+            else '<div class="brand-logo-fallback">GD</div>'
+        )
+
         login_name = profile.get("name", "未登入") if profile else "未登入"
         st.markdown(
             f"""
             <div class="header-panel">
                 <div class="brand-row">
-                    <div class="brand-logo">GD</div>
+                    <div class="brand-logo">{header_logo_html}</div>
                     <div>
                         <p class="brand-name">{APP_NAME}</p>
                         <p class="brand-subtitle">{APP_SUBTITLE}</p>
@@ -2552,15 +2553,19 @@ def main() -> None:
             with st.chat_message("assistant", avatar="🏢"):
                 render_assistant_message(message, index)
 
-    if st.session_state.get("auto_scroll_to_latest"):
-        scroll_to_latest_message()
-        st.session_state.auto_scroll_to_latest = False
-    elif st.session_state.get("scroll_to_top_on_load"):
-        scroll_to_page_top()
-        st.session_state.scroll_to_top_on_load = False
+    submitted_question: Optional[str] = None
+    with st.form("chat_input_form", clear_on_submit=True):
+        user_input = st.text_input(
+            "客服輸入",
+            placeholder="請輸入您想詢問的內容，例如：BK-20260527-1234 狀態如何？",
+            label_visibility="collapsed",
+        )
+        submit_chat = st.form_submit_button("送出", use_container_width=True)
 
-    user_input = st.chat_input("請輸入您想詢問的內容，例如：BK-20260527-1234 狀態如何？")
-    final_question = selected_quick_question if selected_quick_question else user_input
+    if submit_chat:
+        submitted_question = user_input
+
+    final_question = selected_quick_question if selected_quick_question else submitted_question
 
     if final_question:
         final_question = final_question.strip()
@@ -2606,8 +2611,6 @@ def main() -> None:
         assistant_message["agent_title"] = AGENT_PROFILE["title"]
 
         st.session_state.messages.append(assistant_message)
-        st.session_state.scroll_to_top_on_load = False
-        st.session_state.auto_scroll_to_latest = True
         st.rerun()
 
 
