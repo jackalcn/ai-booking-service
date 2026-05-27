@@ -1203,6 +1203,9 @@ def init_session_state() -> None:
     if "admin_unlocked" not in st.session_state:
         st.session_state.admin_unlocked = False
 
+    if "scroll_to_chat_section" not in st.session_state:
+        st.session_state.scroll_to_chat_section = False
+
 
 def get_case_status() -> str:
     messages = st.session_state.get("messages", [])
@@ -1515,22 +1518,25 @@ def prevent_scroll_restore_on_reload() -> None:
     )
 
 
-def scroll_to_page_top() -> None:
+def scroll_to_chat_section() -> None:
     components.html(
         """
         <script>
         let attempts = 0;
-        const maxAttempts = 20;
+        const maxAttempts = 35;
 
         const runScroll = () => {
             const rootDoc = window.parent?.document;
             if (!rootDoc) return false;
 
-            const scroller = rootDoc.querySelector('[data-testid="stAppScrollToBottomContainer"]');
-            if (!scroller) return false;
+            const messages = rootDoc.querySelectorAll('[data-testid="stChatMessage"]');
+            const latestMessage = messages.length ? messages[messages.length - 1] : null;
+            const anchor = rootDoc.querySelector('#gd-chat-anchor');
+            const target = latestMessage || anchor;
+            if (!target) return false;
 
-            scroller.scrollTo({ top: 0, behavior: 'auto' });
-            return scroller.scrollTop <= 1;
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return true;
         };
 
         const timer = setInterval(() => {
@@ -2555,6 +2561,7 @@ def main() -> None:
 
     st.markdown("### 客服對話區")
     st.caption("回覆內容固定顯示：問題分類、客服回覆、資料來源、是否建議轉人工窗口。")
+    st.markdown('<div id="gd-chat-anchor"></div>', unsafe_allow_html=True)
 
     for index, message in enumerate(st.session_state.messages):
         role = message.get("role", "assistant")
@@ -2568,6 +2575,10 @@ def main() -> None:
         else:
             with st.chat_message("assistant", avatar="🏢"):
                 render_assistant_message(message, index)
+
+    if st.session_state.get("scroll_to_chat_section", False):
+        scroll_to_chat_section()
+        st.session_state.scroll_to_chat_section = False
 
     submitted_question: Optional[str] = None
     with st.form("chat_input_form", clear_on_submit=True):
@@ -2627,6 +2638,7 @@ def main() -> None:
         assistant_message["agent_title"] = AGENT_PROFILE["title"]
 
         st.session_state.messages.append(assistant_message)
+        st.session_state.scroll_to_chat_section = True
         st.rerun()
 
 
