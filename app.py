@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 import os
@@ -29,7 +30,9 @@ APP_NAME = "AI 智慧訂房及客服系統"
 APP_SUBTITLE = "家登精密內部差旅宿舍訂房與客服平台"
 INTERNAL_USE_NOTICE = "僅限家登精密員工及授權同仁使用"
 SYSTEM_OWNER = "吳佩綺"
-BRAND_LOGO_URL = "https://www.gudeng.com/img/logo.svg"
+ASSETS_DIR = Path("assets")
+BRAND_LOGO_FILE_PATH = ASSETS_DIR / "gudeng-logo.svg"
+THEME_BACKGROUND_FILE_PATH = ASSETS_DIR / "gudeng-theme-bg.jpg"
 OPENAI_TIMEOUT_SECONDS = 20
 AI_CONNECT_TIMEOUT_SECONDS = 6
 AI_READ_TIMEOUT_SECONDS = 12
@@ -144,6 +147,24 @@ def parse_bool(value: str) -> bool:
 
 def split_csv(value: str) -> List[str]:
     return [item.strip() for item in str(value).split(",") if item.strip()]
+
+
+ASSET_DATA_URI_CACHE: Dict[str, str] = {}
+
+
+def build_asset_data_uri(file_path: Path, mime_type: str) -> str:
+    cache_key = f"{file_path}|{mime_type}"
+    if cache_key in ASSET_DATA_URI_CACHE:
+        return ASSET_DATA_URI_CACHE[cache_key]
+
+    try:
+        encoded = base64.b64encode(file_path.read_bytes()).decode("ascii")
+    except OSError:
+        return ""
+
+    data_uri = f"data:{mime_type};base64,{encoded}"
+    ASSET_DATA_URI_CACHE[cache_key] = data_uri
+    return data_uri
 
 
 def first_non_empty(*values: str) -> str:
@@ -1268,13 +1289,23 @@ def build_booking_export_json() -> str:
 # -----------------------------
 # 畫面
 # -----------------------------
-def build_sidebar(notification_cfg: Dict[str, str], sso_enabled: bool) -> Tuple[Optional[Dict[str, str]], bool]:
+def build_sidebar(
+    notification_cfg: Dict[str, str],
+    sso_enabled: bool,
+    brand_logo_src: str,
+) -> Tuple[Optional[Dict[str, str]], bool]:
     with st.sidebar:
+        brand_logo_html = (
+            f'<img src="{brand_logo_src}" class="side-logo-img" alt="家登精密 Logo" />'
+            if brand_logo_src
+            else '<div class="side-logo-fallback">GD</div>'
+        )
+
         st.markdown(
             f"""
             <div class="side-brand">
                 <div class="side-logo-wrap">
-                    <img src="{BRAND_LOGO_URL}" class="side-logo-img" alt="家登精密 Logo" />
+                    {brand_logo_html}
                 </div>
                 <div>
                     <div class="side-brand-title">{APP_NAME}</div>
@@ -2058,11 +2089,13 @@ def main() -> None:
     ai_enabled = bool(api_key)
     notification_cfg = resolve_notification_config()
     sso_enabled = parse_bool(get_runtime_setting("ENABLE_SSO", "false"))
+    brand_logo_src = build_asset_data_uri(BRAND_LOGO_FILE_PATH, "image/svg+xml")
+    background_src = build_asset_data_uri(THEME_BACKGROUND_FILE_PATH, "image/jpeg")
+    background_layer = f'url("{background_src}")' if background_src else "none"
 
     st.set_page_config(page_title=APP_NAME, page_icon="🏢", layout="wide", initial_sidebar_state="expanded")
 
-    st.markdown(
-        """
+    css_styles = """
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Rajdhani:wght@600;700&display=swap');
 
@@ -2082,34 +2115,29 @@ def main() -> None:
         .stApp {
             background:
                 linear-gradient(180deg, rgba(245, 248, 252, 0.9) 0%, rgba(248, 251, 253, 0.92) 48%, rgba(255, 255, 255, 0.95) 100%),
-                url("https://www.gudeng.com/UploadImage/PageEdit/637546791602481737.jpg");
+                __BACKGROUND_LAYER__;
             background-size: cover;
             background-position: center top;
             background-repeat: no-repeat;
         }
 
-        [data-testid="stToolbarActions"],
-        [data-testid="stStatusWidget"],
-        [data-testid="stAppDeployButton"],
-        [data-testid="stMainMenu"] {
+        header[data-testid="stHeader"],
+        [data-testid="stToolbar"] {
             display: none !important;
             visibility: hidden !important;
-        }
-
-        [data-testid="stExpandSidebarButton"],
-        [data-testid="stSidebarCollapseButton"],
-        [data-testid="stSidebarCollapseButton"] button {
-            display: inline-flex !important;
-            visibility: visible !important;
-            opacity: 1 !important;
+            height: 0 !important;
         }
 
         .block-container {
             max-width: 1180px;
-            padding-top: 1rem;
+            padding-top: 2rem;
             padding-bottom: 2.2rem;
             padding-left: 1.2rem;
             padding-right: 1.2rem;
+        }
+
+        [data-testid="stMainBlockContainer"] {
+            padding-top: 2rem !important;
         }
 
         .header-panel {
@@ -2119,6 +2147,7 @@ def main() -> None:
             border-left: 7px solid var(--gd-blue);
             border-radius: 14px;
             padding: 18px 20px;
+            margin-top: 10px;
             box-shadow: 0 14px 26px rgba(24, 55, 95, 0.12);
         }
 
@@ -2192,6 +2221,7 @@ def main() -> None:
             border-radius: 14px;
             box-shadow: 0 10px 20px rgba(28, 62, 102, 0.1);
             padding: 14px;
+            margin-top: 10px;
             min-height: 130px;
         }
 
@@ -2323,6 +2353,21 @@ def main() -> None:
             display: block;
         }
 
+        .side-logo-fallback {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(140deg, #18b2d4 0%, #0d5ca8 100%);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+        }
+
         .side-brand-title {
             color: #104171;
             font-weight: 700;
@@ -2420,14 +2465,14 @@ def main() -> None:
             }
         }
         </style>
-        """,
-        unsafe_allow_html=True,
-    )
+    """
+
+    st.markdown(css_styles.replace("__BACKGROUND_LAYER__", background_layer), unsafe_allow_html=True)
 
     init_session_state()
     init_database()
 
-    profile, admin_mode = build_sidebar(notification_cfg, sso_enabled)
+    profile, admin_mode = build_sidebar(notification_cfg, sso_enabled, brand_logo_src)
     refresh_booking_cache(profile, admin_mode)
 
     header_col1, header_col2 = st.columns([2.2, 1], gap="medium")
